@@ -1,0 +1,8 @@
+tensorflow>=2.10
+flask>=2.0
+pandas
+scikit-learn
+opencv-python
+matplotlib
+pillow
+python-dotenv

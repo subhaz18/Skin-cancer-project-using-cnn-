@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head><title>Skin Cancer Detection</title></head>
+<body>
+  <h1>Upload lesion image</h1>
+  <form method="POST" enctype="multipart/form-data">
+    <input type="file" name="image" accept="image/*" required><br><br>
+    <!-- inside your form add -->
+    <label><input type="checkbox" name="gradcam"> Show Grad-CAM (visual explanation)</label><br><br>
+
+    <label>Optional: If you have a doctor-confirmed label:</label>
+    <select name="user_label">
+      <option value="">-- I don't know --</option>
+      {% for lab in possible_labels %}
+      <option value="{{ lab }}">{{ lab }}</option>
+      {% endfor %}
+    </select><br><br>
+
+    <label><input type="checkbox" name="doctor_confirmed"> Doctor-confirmed</label><br><br>
+
+    <button type="submit">Upload & Predict</button>
+  </form>
+  <p><small>Disclaimer: For demo only. Not a medical diagnosis.</small></p>
+</body>
+</html>
