@@ -1,22 +1,29 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-<head><title>Result</title></head>
+<head>
+    <title>Prediction Result</title>
+    <style>
+        body { font-family: Arial; text-align: center; margin-top: 30px; }
+        img { margin: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
 <body>
-  <h1>Prediction</h1>
-  <img src="{{ url_for('static', filename='uploads/' + image_file) }}" style="max-width:300px"><br>
-  <p>Predicted: <strong>{{ pred_label }}</strong></p>
-  <p>Confidence: <strong>{{ confidence }}%</strong></p>
 
-  {% if user_label %}
-  <p>User-provided label: {{ user_label }} (Doctor confirmed: {{ 'Yes' if doctor_confirmed else 'No' }})</p>
-  {% endif %}
+<h2>Prediction Result</h2>
 
-  {% if gradcam_file %}
-  <h3>Grad-CAM:</h3>
-  <img src="{{ url_for('uploaded_file', filename=gradcam_file) }}" style="max-width:480px"><br>
-  {% endif %}
+<p><strong>Prediction:</strong> {{ prediction }}</p>
+<p><strong>Confidence:</strong> {{ confidence }}%</p>
 
+<h3>Uploaded Image</h3>
+<img src="{{ url_for('static', filename='uploads/' + image_file) }}" width="300">
 
-  <a href="{{ url_for('index') }}">Back</a>
+{% if gradcam_file %}
+<h3>Grad-CAM Visualization</h3>
+<img src="{{ url_for('static', filename='uploads/' + gradcam_file) }}" width="300">
+{% endif %}
+
+<br><br>
+<a href="/">Try another image</a>
+
 </body>
 </html>

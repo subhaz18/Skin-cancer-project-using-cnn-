@@ -10,7 +10,7 @@ Skin Cancer Detection using EfficientNetB3 on HAM10000
 - Saves model, confusion matrix, accuracy/loss plots
 - Generates Grad-CAM visualizations
 
-Expected accuracy: ~88–92%
+Expected accuracy: ~88 to 92%
 """
 
 import os
@@ -34,9 +34,9 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCh
 # ---------------- CONFIG ----------------
 IMG_SIZE = 300
 BATCH_SIZE = 16
-EPOCHS_HEAD = 25
-EPOCHS_FINE = 6
-FINE_TUNE_LAYERS = 120
+EPOCHS_HEAD = 40
+EPOCHS_FINE = 20
+FINE_TUNE_LAYERS = 200
 
 # ---------------- PATH HELPERS ----------------
 def find_image_path(img_name, folders):
@@ -103,13 +103,13 @@ def build_model(num_classes):
 
     x = backbone.output
     x = layers.GlobalAveragePooling2D()(x)
-    x = layers.Dropout(0.4)(x)
+    x = layers.Dropout(0.3)(x)
     out = layers.Dense(num_classes, activation='softmax')(x)
 
     model = models.Model(backbone.input, out)
     model.compile(
         optimizer=tf.keras.optimizers.Adam(1e-3),
-        loss='categorical_crossentropy',
+        loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
         metrics=['accuracy']
     )
     return model, backbone
@@ -143,34 +143,8 @@ def plot_confusion(cm, labels):
     plt.savefig("results/confusion_matrix.png")
     plt.close()
 
-# ---------------- GRADCAM ----------------
-def gradcam_example(model, img_path, label):
-    grad_model = tf.keras.models.Model(
-        [model.inputs],
-        [model.layers[-3].output, model.output]
-    )
-    img = tf.keras.preprocessing.image.load_img(img_path, target_size=(IMG_SIZE,IMG_SIZE))
-    arr = tf.keras.preprocessing.image.img_to_array(img)/255.0
-    arr = np.expand_dims(arr,0)
 
-    with tf.GradientTape() as tape:
-        conv, preds = grad_model(arr)
-        idx = np.argmax(preds[0])
-        loss = preds[:, idx]
-
-    grads = tape.gradient(loss, conv)
-    pooled = tf.reduce_mean(grads, axis=(0,1,2))
-    heatmap = tf.reduce_sum(conv[0] * pooled, axis=-1)
-    heatmap = np.maximum(heatmap,0)/np.max(heatmap)
-
-    heatmap = cv2.resize(heatmap, (IMG_SIZE,IMG_SIZE))
-    heatmap = np.uint8(255*heatmap)
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-
-    orig = cv2.imread(img_path)
-    orig = cv2.resize(orig, (IMG_SIZE,IMG_SIZE))
-    overlay = cv2.addWeighted(orig,0.6,heatmap,0.4,0)
-    cv2.imwrite(f"results/gradcam_{label}.png", overlay)
+    
 
 # ---------------- MAIN ----------------
 def main():
@@ -197,7 +171,7 @@ def main():
 
     callbacks = [
         EarlyStopping(patience=7, restore_best_weights=True),
-        ReduceLROnPlateau(patience=3, factor=0.3),
+        ReduceLROnPlateau(patience=5, factor=0.5, min_lr=1e-6),
         ModelCheckpoint("models/best_model.h5", save_best_only=True)
     ]
 
@@ -207,19 +181,20 @@ def main():
 
     print("\nFine-tuning...")
     backbone.trainable = True
-    for layer in backbone.layers[:-FINE_TUNE_LAYERS]:
+    for layer in backbone.layers[:-200]:
         layer.trainable = False
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(1e-5),
-        loss='categorical_crossentropy',
+        loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
         metrics=['accuracy']
     )
 
     hist2 = model.fit(train_gen, validation_data=val_gen,
                       epochs=EPOCHS_FINE, callbacks=callbacks)
 
-    model.save("models/cnn_ham10000_saved_model")
+    model.save("models/cnn_ham10000_saved_model.h5")
+
 
     plot_history(hist2)
 
@@ -231,7 +206,7 @@ def main():
     print("\n", classification_report(y_true, y_pred, target_names=labels))
     plot_confusion(confusion_matrix(y_true, y_pred), labels)
 
-    gradcam_example(model, test_df.iloc[0]['filepath'], labels[y_pred[0]])
+    #gradcam_example(model, test_df.iloc[0]['filepath'], labels[y_pred[0]])
 
     print("\nTraining complete. Results saved in /results")
 
