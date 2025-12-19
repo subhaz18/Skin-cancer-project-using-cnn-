@@ -144,7 +144,7 @@ def plot_confusion(cm, labels):
     plt.close()
 
 
-    
+
 
 # ---------------- MAIN ----------------
 def main():
@@ -193,7 +193,7 @@ def main():
     hist2 = model.fit(train_gen, validation_data=val_gen,
                       epochs=EPOCHS_FINE, callbacks=callbacks)
 
-    model.save("models/cnn_ham10000_saved_model.h5")
+    model.save("models/cnn_ham10000_saved_model.keras")
 
 
     plot_history(hist2)
